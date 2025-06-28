@@ -4,3 +4,18 @@
 2025-06-24 11:49:06,175 - INFO - Connected to the database.
 2025-06-24 11:49:06,180 - INFO - Found 0 tables with dead tuples > 1000.
 2025-06-24 11:49:06,180 - INFO - Script finished successfully.
+2025-06-24 12:19:12,716 - INFO - Logging is set up.
+2025-06-24 12:19:12,719 - INFO - Script started.
+2025-06-24 12:19:14,933 - INFO - Connected to the database.
+2025-06-24 12:19:14,984 - INFO - Found 0 tables with dead tuples > 1000.
+2025-06-24 12:19:14,984 - INFO - Script finished successfully.
+2025-06-28 00:24:19,823 - INFO - Logging is set up.
+2025-06-28 00:24:19,823 - INFO - Script started.
+2025-06-28 00:24:21,976 - INFO - Connected to the database.
+2025-06-28 00:24:22,012 - INFO - Found 0 tables with dead tuples > 1000.
+2025-06-28 00:24:22,013 - INFO - Script finished successfully.
+2025-06-28 01:44:17,639 - INFO - Logging is set up.
+2025-06-28 01:44:17,639 - INFO - Script started.
+2025-06-28 01:44:19,833 - INFO - Connected to the database.
+2025-06-28 01:44:19,855 - INFO - Found 0 tables with dead tuples > 1000.
+2025-06-28 01:44:19,855 - INFO - Script finished successfully.

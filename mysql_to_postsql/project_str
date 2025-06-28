@@ -1,0 +1,17 @@
+mysql_to_postgres_etl/
+│
+├── config/
+│   ├── mysql_config.py
+│   └── postgres_config.py
+│
+├── etl/
+│   ├── __init__.py
+│   ├── extract.py
+│   ├── transform.py
+│   └── load.py
+│
+├── utils/
+│   ├── __init__.py
+│   └── logger.py
+│
+└── main.py
