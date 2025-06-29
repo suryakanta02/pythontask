@@ -1,0 +1,34 @@
+2025-06-29 14:57:15 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 14:57:16 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 14:57:16 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 14:57:18 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 14:57:18 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 14:57:18 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 14:57:18 - pipeline - ERROR - Pipeline failed: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 14:57:18 - pipeline - INFO - Closed MySQL connection
+2025-06-29 14:57:18 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:02:42 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:02:43 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:02:43 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:02:45 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:02:45 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 15:02:45 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 15:02:45 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:02:45 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:02:59 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:02:59 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:02:59 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:03:01 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:03:01 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 15:03:01 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 15:03:01 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:03:01 - pipeline - INFO - Closed PostgreSQL connection
