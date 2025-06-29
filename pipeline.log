@@ -112,3 +112,79 @@ LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
 
 2025-06-29 15:56:30 - pipeline - INFO - Closed MySQL connection
 2025-06-29 15:56:30 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 23:01:19 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 23:01:20 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 23:01:20 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 23:01:22 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 23:01:22 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 23:01:22 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 23:01:22 - pipeline - INFO - Closed MySQL connection
+2025-06-29 23:01:22 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 23:25:33 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 23:25:33 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 23:25:33 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 23:25:35 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 23:25:35 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 23:25:35 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 23:25:35 - pipeline - INFO - Closed MySQL connection
+2025-06-29 23:25:35 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 23:35:22 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 23:35:22 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 23:35:22 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 23:35:24 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 23:35:24 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 23:35:24 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+Traceback (most recent call last):
+  File "c:\Users\onlyk\OneDrive\Desktop\pythontask\dataload_pipeline\data_pipeline.py", line 208, in transfer_table
+    self.create_postgres_table(table_name, columns, data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\onlyk\OneDrive\Desktop\pythontask\dataload_pipeline\data_pipeline.py", line 144, in create_postgres_table
+    cursor.execute(create_table_stmt)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.SyntaxError: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 23:35:24 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
+                            ^
+
+2025-06-29 23:35:24 - pipeline - INFO - Starting transfer for table: orders
+2025-06-29 23:35:24 - pipeline - INFO - Extracted 4 records from orders
+2025-06-29 23:35:24 - pipeline - ERROR - Error creating table orders in PostgreSQL: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "order_id" int NOT NULL AUTO_INCREMENT,
+                                  ^
+
+2025-06-29 23:35:24 - pipeline - ERROR - Failed to transfer table orders: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "order_id" int NOT NULL AUTO_INCREMENT,
+                                  ^
+Traceback (most recent call last):
+  File "c:\Users\onlyk\OneDrive\Desktop\pythontask\dataload_pipeline\data_pipeline.py", line 208, in transfer_table
+    self.create_postgres_table(table_name, columns, data)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "c:\Users\onlyk\OneDrive\Desktop\pythontask\dataload_pipeline\data_pipeline.py", line 144, in create_postgres_table
+    cursor.execute(create_table_stmt)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.SyntaxError: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "order_id" int NOT NULL AUTO_INCREMENT,
+                                  ^
+
+2025-06-29 23:35:24 - pipeline - ERROR - Failed to transfer table orders: syntax error at or near "AUTO_INCREMENT"
+LINE 2:   "order_id" int NOT NULL AUTO_INCREMENT,
+                                  ^
+
+2025-06-29 23:35:24 - pipeline - INFO - Closed MySQL connection
+2025-06-29 23:35:24 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 23:36:42 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 23:36:42 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 23:36:42 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 23:36:44 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 23:36:44 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 23:36:44 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 23:36:44 - pipeline - INFO - Closed MySQL connection
+2025-06-29 23:36:44 - pipeline - INFO - Closed PostgreSQL connection
