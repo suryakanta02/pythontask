@@ -69,40 +69,64 @@ class DataPipeline:
         """
         # Basic replacements
         create_stmt = create_stmt.replace('`', '"')
-        create_stmt = create_stmt.replace('ENGINE=InnoDB', '')
+        create_stmt = re.sub(r'ENGINE=\w+', '', create_stmt)
         create_stmt = create_stmt.replace('DEFAULT CURRENT_TIMESTAMP', 'DEFAULT CURRENT_TIMESTAMP')
         
         # Handle AUTO_INCREMENT
         create_stmt = re.sub(
-            r'int\([0-9]+\) NOT NULL AUTO_INCREMENT',
+            r'int(?:\(\d+\))? NOT NULL AUTO_INCREMENT',
             'SERIAL PRIMARY KEY',
             create_stmt
         )
         
         # Handle other integer types
-        create_stmt = re.sub(r'int\([0-9]+\)', 'INTEGER', create_stmt)
-        create_stmt = re.sub(r'tinyint\([0-9]+\)', 'SMALLINT', create_stmt)
-        create_stmt = re.sub(r'smallint\([0-9]+\)', 'SMALLINT', create_stmt)
-        create_stmt = re.sub(r'bigint\([0-9]+\)', 'BIGINT', create_stmt)
+        create_stmt = re.sub(r'int\(\d+\)', 'INTEGER', create_stmt)
+        create_stmt = re.sub(r'tinyint(?:\(\d+\))?', 'SMALLINT', create_stmt)
+        create_stmt = re.sub(r'smallint(?:\(\d+\))?', 'SMALLINT', create_stmt)
+        create_stmt = re.sub(r'bigint(?:\(\d+\))?', 'BIGINT', create_stmt)
         
         # Handle string types
-        create_stmt = re.sub(r'varchar\(([0-9]+)\)', r'VARCHAR(\1)', create_stmt)
-        create_stmt = re.sub(r'char\(([0-9]+)\)', r'CHAR(\1)', create_stmt)
-        create_stmt = re.sub(r'text', 'TEXT', create_stmt)
+        create_stmt = re.sub(r'varchar\((\d+)\)', r'VARCHAR(\1)', create_stmt)
+        create_stmt = re.sub(r'char\((\d+)\)', r'CHAR(\1)', create_stmt)
+        create_stmt = re.sub(r'text(?:\(\d+\))?', 'TEXT', create_stmt)
         
         # Handle decimal types
-        create_stmt = re.sub(r'decimal\(([0-9]+),([0-9]+)\)', r'DECIMAL(\1,\2)', create_stmt)
+        create_stmt = re.sub(r'decimal\((\d+),(\d+)\)', r'DECIMAL(\1,\2)', create_stmt)
         
         # Handle ENUM types (convert to VARCHAR with CHECK constraint)
-        enum_pattern = re.compile(r"enum\(('[^']+'(?:,'[^']+')*)\)", re.IGNORECASE)
-        create_stmt = enum_pattern.sub(
-            lambda m: f"VARCHAR(255) CHECK ({create_stmt.split('`')[1]} IN ({m.group(1)}))", 
+        def replace_enum(match):
+            enum_values = match.group(1)
+            # Extract the column name from the full line
+            line_start = create_stmt.rfind('\n', 0, match.start()) + 1
+            line_end = create_stmt.find('\n', match.start())
+            line = create_stmt[line_start:line_end].strip()
+            col_name = line.split('"')[1]  # Get the column name between quotes
+            return f'VARCHAR(255) CHECK ("{col_name}" IN ({enum_values}))'
+        
+        create_stmt = re.sub(
+            r'enum\((\'[^\']+\'(?:,\s*\'[^\']+\')*)\)',
+            replace_enum,
+            create_stmt,
+            flags=re.IGNORECASE
+        )
+        
+        # Convert UNIQUE KEY to PostgreSQL syntax
+        create_stmt = re.sub(
+            r'UNIQUE KEY "[^"]+" \(("[^"]+"(?:,\s*"[^"]+")*)\)',
+            r'UNIQUE (\1)',
+            create_stmt
+        )
+        
+        # Convert KEY to PostgreSQL INDEX (if needed)
+        create_stmt = re.sub(
+            r'KEY "[^"]+" \(("[^"]+"(?:,\s*"[^"]+")*)\)',
+            r'',
             create_stmt
         )
         
         # Remove MySQL-specific attributes
-        create_stmt = re.sub(r'CHARACTER SET [^ ]+', '', create_stmt)
-        create_stmt = re.sub(r'COLLATE [^ ]+', '', create_stmt)
+        create_stmt = re.sub(r'CHARACTER SET \w+', '', create_stmt)
+        create_stmt = re.sub(r'COLLATE \w+', '', create_stmt)
         
         return create_stmt
     
@@ -153,7 +177,14 @@ class DataPipeline:
             insert_stmt = f"INSERT INTO {table_name} ({columns_str}) VALUES ({placeholders})"
             
             # Convert dicts to tuples in the correct column order
-            data_tuples = [tuple(record[col] for col in columns) for record in data]
+            data_tuples = []
+            for record in data:
+                try:
+                    data_tuples.append(tuple(record[col] for col in columns))
+                except KeyError as e:
+                    logger.warning(f"Missing column {e} in record: {record}")
+                    # Fill missing columns with None
+                    data_tuples.append(tuple(record.get(col, None) for col in columns))
             
             # Execute in batches
             execute_batch(cursor, insert_stmt, data_tuples, page_size=BATCH_SIZE)
@@ -189,7 +220,7 @@ class DataPipeline:
             logger.info(f"Completed transfer for {table_name} in {elapsed:.2f} seconds")
             
         except Exception as err:
-            logger.error(f"Failed to transfer table {table_name}: {err}")
+            logger.error(f"Failed to transfer table {table_name}: {str(err)}")
             raise
     
     def close_connections(self):
@@ -213,7 +244,7 @@ def main():
             pipeline.transfer_table(table)
             
     except Exception as e:
-        logger.error(f"Pipeline failed: {e}")
+        logger.error(f"Pipeline failed: {str(e)}")
     finally:
         pipeline.close_connections()
 

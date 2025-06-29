@@ -32,3 +32,83 @@ LINE 2:   "id" int NOT NULL AUTO_INCREMENT,
 2025-06-29 15:03:01 - pipeline - ERROR - Pipeline failed: list index out of range
 2025-06-29 15:03:01 - pipeline - INFO - Closed MySQL connection
 2025-06-29 15:03:01 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:05:49 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:05:49 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:05:49 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:05:52 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:05:52 - pipeline - ERROR - Failed to transfer table customers: list index out of range
+2025-06-29 15:05:52 - pipeline - ERROR - Pipeline failed: list index out of range
+2025-06-29 15:05:52 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:05:52 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:35:38 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:35:38 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:35:38 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:35:40 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:35:40 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "column"
+LINE 6:   "status" VARCHAR(255) CHECK (column IN ('active','inactive...
+                                       ^
+
+2025-06-29 15:35:40 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "column"
+LINE 6:   "status" VARCHAR(255) CHECK (column IN ('active','inactive...
+                                       ^
+
+2025-06-29 15:35:40 - pipeline - ERROR - Pipeline failed: syntax error at or near "column"
+LINE 6:   "status" VARCHAR(255) CHECK (column IN ('active','inactive...
+                                       ^
+
+2025-06-29 15:35:40 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:35:40 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:38:42 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:38:42 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:38:42 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:38:44 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:38:44 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "KEY"
+LINE 8:   UNIQUE KEY "email" ("email")
+                 ^
+
+2025-06-29 15:38:44 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "KEY"
+LINE 8:   UNIQUE KEY "email" ("email")
+                 ^
+
+2025-06-29 15:38:44 - pipeline - ERROR - Pipeline failed: syntax error at or near "KEY"
+LINE 8:   UNIQUE KEY "email" ("email")
+                 ^
+
+2025-06-29 15:38:44 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:38:44 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:41:38 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:41:38 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:41:38 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:41:40 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:41:40 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:41:40 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:41:40 - pipeline - ERROR - Pipeline failed: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:41:40 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:41:40 - pipeline - INFO - Closed PostgreSQL connection
+2025-06-29 15:56:28 - pipeline - INFO - Starting transfer for table: customers
+2025-06-29 15:56:28 - pipeline - INFO - Successfully connected to MySQL database
+2025-06-29 15:56:28 - pipeline - INFO - Extracted 4 records from customers
+2025-06-29 15:56:30 - pipeline - INFO - Successfully connected to PostgreSQL database
+2025-06-29 15:56:30 - pipeline - ERROR - Error creating table customers in PostgreSQL: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:56:30 - pipeline - ERROR - Failed to transfer table customers: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:56:30 - pipeline - ERROR - Pipeline failed: syntax error at or near "AUTO_INCREMENT"
+LINE 9: )  AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_...
+           ^
+
+2025-06-29 15:56:30 - pipeline - INFO - Closed MySQL connection
+2025-06-29 15:56:30 - pipeline - INFO - Closed PostgreSQL connection
