@@ -151,405 +151,243 @@ def insert_rows(sql_statement, rows, bulk=True):
     cursor.close()
     return True
 
-def execute_delete(sql, params=None):
-    """Execute a delete SQL statement with the given parameters"""
-    connection = None
-    try:
-        connection = psycopg2.connect(**postgres_conn_params)
-        cursor = connection.cursor()
-        
-        if params:
-            if isinstance(params[0], (list, tuple)):  # Handle cases where params is a list of lists
-                cursor.executemany(sql, params)
-            else:
-                cursor.execute(sql, params)
-        else:
-            cursor.execute(sql)
-            
-        deleted_rows = cursor.rowcount
-        connection.commit()
-        logging.info(f"Deleted {deleted_rows} rows")
-        return deleted_rows
-    except Exception as e:
-        logging.error(f"Error executing delete: {e}")
-        if connection:
-            connection.rollback()
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if connection:
-            connection.close()
-
-
-
-
-
-def sync(date, update_tables = ["teams", "tests", "trials", "results", "profiles"], force_update=False):
-    logging.info(f"Syncing data in {update_tables} from {date}. Force update: {force_update}")
+def sync(date, update_tables = ["teams", "tests", "trials", "results", "profiles"]):
+    logging.info(f"Syncing data in {update_tables} from {date}")
     try:
         teams_url = f'{test_url}/v2019q3/teams'
         teams_data = fetch_api_data(token, 'GET', teams_url)
         logging.info(f"Number of teams:{len(teams_data)}")
-        
-        # Teams table handling
+        sql = f"""INSERT INTO {schema_name}.teams (
+                team_id,
+                team_name,
+                team_region,
+                team_hub_sync_enabled,
+                team_api_response_data,
+                created_at,
+                updated_at,
+                created_by_user,
+                modified_by_user
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s
+            );"""
         if "teams" in update_tables:
-            if force_update:
-                # Delete existing teams data if force update is enabled
-                delete_sql = f"DELETE FROM {schema_name}.teams WHERE team_id IN (%s)" % ','.join(['%s'] * len(teams_data))
-                delete_params = [item.get('id') for item in teams_data]
-                execute_delete(delete_sql, delete_params)
-                logging.info(f"Deleted existing teams data for force update")
-            
-            sql = f"""INSERT INTO {schema_name}.teams (
-                    team_id,
-                    team_name,
-                    team_region,
-                    team_hub_sync_enabled,
-                    team_api_response_data,
-                    created_at,
-                    updated_at,
-                    created_by_user,
-                    modified_by_user
-                ) VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s
-                )"""
-            if force_update:
-                sql += " ON CONFLICT (team_id) DO UPDATE SET " \
-                       "team_name = EXCLUDED.team_name, " \
-                       "team_region = EXCLUDED.team_region, " \
-                       "team_hub_sync_enabled = EXCLUDED.team_hub_sync_enabled, " \
-                       "team_api_response_data = EXCLUDED.team_api_response_data, " \
-                       "updated_at = EXCLUDED.updated_at, " \
-                       "modified_by_user = EXCLUDED.modified_by_user"
-            
             insert_rows(
                 sql,
                 [(item.get('id'), item.get('name'), item.get('region'), item.get('isHubSyncEnabled'), json.dumps(item), datetime.datetime.now(), datetime.datetime.now(),None,None)  for item in teams_data]
             )
-        
         trial_rows = []
         result_rows = []
         if not teams_data:
             raise ValueError("Teams data Empty")
-            
         for team in teams_data:
-            logging.info(f"Processing team {team['id']}")
-            
-            # Tests data handling
-            if 'tests' in update_tables:
+            logging.info(f"inserting in tables {update_tables}")
+            if 'tests' not in update_tables \
+                    and 'trials' not in update_tables\
+                    and 'results' not in update_tables:
+                pass
+            else:
                 tests_url = f'{test_url}/v2019q3/teams/{team["id"]}/tests/1'
-                tests_data = fetch_api_data(token, 'GET', tests_url, {'modifiedFrom': date}, pages=True)
+                tests_data = fetch_api_data(token, 'GET', tests_url, {'modifiedFrom': date}, pages= True)
                 test_rows = []
-                
                 if not tests_data:
                     logging.error(f"{tests_url} fetched None")
-                else:
-                    logging.info(f"Number of tests:{len(tests_data)}")
-                    
-                    if force_update:
-                        # Delete existing tests for this team
-                        delete_sql = f"DELETE FROM {schema_name}.athlete_tests WHERE athlete_test_id IN (%s)" % ','.join(['%s'] * len(tests_data))
-                        delete_params = [test.get('id') for test in tests_data]
-                        execute_delete(delete_sql, delete_params)
-                    
-                    for test in tests_data:
-                        logging.debug(f"TestID: {test.get('id')}")
-                        test_rows.append(
-                            (test.get('id'), test.get('athleteId'), test.get('hubAthleteId'), test.get('recordingId'), 
-                             datetime.datetime.fromisoformat(test.get('recordedUTC').replace('Z', '+00:00')), 
-                             test.get('recordedTimezone'), test.get('testType'), test.get('weight'), 
-                             datetime.datetime.fromisoformat(test.get('analysedUTC').replace('Z', '+00:00')), 
-                             test.get('analysedTimezone'), json.dumps(test), 
-                             datetime.datetime.fromisoformat(test.get('lastModifiedUTC').replace('Z', '+00:00')), 
-                             datetime.datetime.now(), datetime.datetime.now(), None, None)
-                        )
-                        
-                        # Trials and results data collection
-                        if 'trials' in update_tables or 'results' in update_tables:
-                            trial_url = f'{test_url}/v2019q3/teams/{team["id"]}/tests/{test["id"]}/trials'
-                            trial_data = fetch_api_data(token, 'GET', trial_url)
-                            
-                            if trial_data:
-                                logging.info(f"trial_data count for test id {test.get('id')} {len(trial_data)}")
-                                
-                                if force_update and 'trials' in update_tables:
-                                    # Delete existing trials for these tests
-                                    delete_sql = f"DELETE FROM {schema_name}.athlete_test_trials WHERE athlete_test_id IN (%s)" % ','.join(['%s'] * len(tests_data))
-                                    delete_params = [test.get('id') for test in tests_data]
-                                    execute_delete(delete_sql, delete_params)
-                                
-                                for trial_row in trial_data:
-                                    logging.debug(f"TrialId: {trial_row.get('id')}")
-                                    trial_rows.append((
-                                        trial_row.get('id'),
-                                        test.get('id'),
-                                        trial_row.get('athleteId'),
-                                        trial_row.get('hubAthleteId'),
-                                        test.get('recordingId'),
-                                        datetime.datetime.strptime(trial_row.get('recordedUTC'), '%Y-%m-%dT%H:%M:%S.%fZ'),
-                                        trial_row.get('recordedTimezone'),
-                                        trial_row.get('startTime'),
-                                        trial_row.get('endTime'),
-                                        json.dumps({k: v for k, v in trial_row.items() if k != "results"}),
-                                        trial_row.get('limb'),
-                                        datetime.datetime.strptime(trial_row.get('lastModifiedUTC'), '%Y-%m-%dT%H:%M:%S.%fZ'),
-                                        datetime.datetime.now(),
-                                        datetime.datetime.now(),
-                                        None,
-                                        None
-                                    ))
-                                    
-                                    if 'results' in update_tables:
-                                        if force_update:
-                                            # Delete existing results for these trials
-                                            delete_sql = f"DELETE FROM {schema_name}.athlete_test_trial_results WHERE athlete_trial_id IN (%s)" % ','.join(['%s'] * len(trial_data))
-                                            delete_params = [trial.get('id') for trial in trial_data]
-                                            execute_delete(delete_sql, delete_params)
-                                        
-                                        for result in trial_row.get('results', []):
-                                            result_rows.append((
-                                                result.get('resultId'),
-                                                trial_row.get('id'),
-                                                trial_row.get('athleteId'),
-                                                trial_row.get('hubAthleteId'),
-                                                test.get('id'),
-                                                result.get('value'),
-                                                result.get('time'),
-                                                result.get('limb'),
-                                                result.get('repeat'),
-                                                result.get('definition').get('name'),
-                                                result.get('definition').get('description'),
-                                                result.get('definition').get('unit'),
-                                                result.get('definition').get('repeatable'),
-                                                result.get('definition').get('asymmetry'),
-                                                json.dumps(result),
-                                                datetime.datetime.now(),
-                                                datetime.datetime.now(),
-                                                None,
-                                                None
-                                            ))
-                                        logging.info(f"Number of result_rows for trial id {trial_row.get('id')}: {len(result_rows)}")
-            
-            # Insert/update tests data
-            if "tests" in update_tables and test_rows:
-                sql = f"""INSERT INTO {schema_name}.athlete_tests (
+                    continue
+                logging.info(f"Number of tests:{len(tests_data)}")
+                for test in tests_data:
+                    logging.debug(f"TestID: {test.get('id')}")
+                    test_rows.append(
+                        (test.get('id'), test.get('athleteId'), test.get('hubAthleteId'), test.get('recordingId'), datetime.datetime.fromisoformat(test.get('recordedUTC').replace('Z', '+00:00')), test.get('recordedTimezone'), test.get('testType'), test.get('weight'), datetime.datetime.fromisoformat(test.get('analysedUTC').replace('Z', '+00:00')), test.get('analysedTimezone'), json.dumps(test), datetime.datetime.fromisoformat(test.get('lastModifiedUTC').replace('Z', '+00:00')), datetime.datetime.now(), datetime.datetime.now(), None, None)
+                                     )
+                    trial_url = f'{test_url}/v2019q3/teams/{team["id"]}/tests/{test["id"]}/trials'
+                    trial_data = fetch_api_data(token, 'GET', trial_url)
+                    if not trial_data:
+                        logging.error(f"{trial_url} fetched None")
+                        continue
+                    logging.info(f"trial_data count for test id {test.get('id')} {len(trial_data)}")
+                    for trial_row in trial_data:
+                        logging.debug(f"TrialId: {trial_row.get('id')}")
+                        trial_rows.extend([(
+                            trial_row.get('id'),
+                            test.get('id'),
+                            trial_row.get('athleteId'),
+                            trial_row.get('hubAthleteId'),
+                            test.get('recordingId'),
+                            datetime.datetime.strptime(trial_row.get('recordedUTC'), '%Y-%m-%dT%H:%M:%S.%fZ'),
+                            trial_row.get('recordedTimezone'),
+                            trial_row.get('startTime'),
+                            trial_row.get('endTime'),
+                            json.dumps({k: v for k, v in trial_row.items() if k != "results"}),
+                            trial_row.get('limb'),
+                            datetime.datetime.strptime(trial_row.get('lastModifiedUTC'), '%Y-%m-%dT%H:%M:%S.%fZ'),
+                            datetime.datetime.now(),
+                            datetime.datetime.now(),
+                            None,
+                            None
+                        )]
+                    )
+                        result_rows.extend([(
+                            result.get('resultId'),
+                            trial_row.get('id'),
+                            trial_row.get('athleteId'),
+                            trial_row.get('hubAthleteId'),
+                            test.get('id'),
+                            result.get('value'),
+                            result.get('time'),
+                            result.get('limb'),
+                            result.get('repeat'),
+                            result.get('definition').get('name'),
+                            result.get('definition').get('description'),
+                            result.get('definition').get('unit'),
+                            result.get('definition').get('repeatable'),
+                            result.get('definition').get('asymmetry'),
+                            json.dumps(result),
+                            datetime.datetime.now(),
+                            datetime.datetime.now(),
+                            None,
+                            None
+                        )for result in trial_row.get('results')]
+                    )
+                        logging.info(f" number of result_rows for trial id {trial_row.get('id')} :- {len(result_rows)}")
+
+            sql = f"""INSERT INTO {schema_name}.athlete_tests (
+                athlete_test_id,
+                athlete_id,
+                athlete_hub_id,
+                athlete_recording_id,
+                athlete_recorded_utc,
+                athlete_recorded_timezone,
+                athlete_test_type,
+                athlete_weight,
+                athlete_analyzed_utc,
+                athlete_analyzed_timezone,
+                athlete_test_response_data,
+                athlete_test_lastmodified_utc,
+                created_at,
+                updated_at,
+                created_by_user,
+                modified_by_user
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            );"""
+            if "tests" in update_tables:
+                insert_rows(sql, test_rows)
+            sql = f"""
+                INSERT INTO {schema_name}.athlete_test_trials (
+                    athlete_trial_id,
                     athlete_test_id,
                     athlete_id,
                     athlete_hub_id,
                     athlete_recording_id,
                     athlete_recorded_utc,
                     athlete_recorded_timezone,
-                    athlete_test_type,
-                    athlete_weight,
-                    athlete_analyzed_utc,
-                    athlete_analyzed_timezone,
-                    athlete_test_response_data,
-                    athlete_test_lastmodified_utc,
+                    trial_start_time,
+                    trial_end_time,
+                    athlete_trial_response_data,
+                    athlete_trial_limb,
+                    athlete_trial_lastmodified_utc,
                     created_at,
                     updated_at,
                     created_by_user,
                     modified_by_user
                 ) VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                )"""
-                if force_update:
-                    sql += " ON CONFLICT (athlete_test_id) DO UPDATE SET " \
-                           "athlete_id = EXCLUDED.athlete_id, " \
-                           "athlete_hub_id = EXCLUDED.athlete_hub_id, " \
-                           "athlete_recording_id = EXCLUDED.athlete_recording_id, " \
-                           "athlete_recorded_utc = EXCLUDED.athlete_recorded_utc, " \
-                           "athlete_recorded_timezone = EXCLUDED.athlete_recorded_timezone, " \
-                           "athlete_test_type = EXCLUDED.athlete_test_type, " \
-                           "athlete_weight = EXCLUDED.athlete_weight, " \
-                           "athlete_analyzed_utc = EXCLUDED.athlete_analyzed_utc, " \
-                           "athlete_analyzed_timezone = EXCLUDED.athlete_analyzed_timezone, " \
-                           "athlete_test_response_data = EXCLUDED.athlete_test_response_data, " \
-                           "athlete_test_lastmodified_utc = EXCLUDED.athlete_test_lastmodified_utc, " \
-                           "updated_at = EXCLUDED.updated_at, " \
-                           "modified_by_user = EXCLUDED.modified_by_user"
-                
-                insert_rows(sql, test_rows)
-            
-            # Insert/update trials data
-            if "trials" in update_tables and trial_rows:
-                sql = f"""
-                    INSERT INTO {schema_name}.athlete_test_trials (
-                        athlete_trial_id,
-                        athlete_test_id,
-                        athlete_id,
-                        athlete_hub_id,
-                        athlete_recording_id,
-                        athlete_recorded_utc,
-                        athlete_recorded_timezone,
-                        trial_start_time,
-                        trial_end_time,
-                        athlete_trial_response_data,
-                        athlete_trial_limb,
-                        athlete_trial_lastmodified_utc,
-                        created_at,
-                        updated_at,
-                        created_by_user,
-                        modified_by_user
-                    ) VALUES (
-                        %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                    )"""
-                if force_update:
-                    sql += " ON CONFLICT (athlete_trial_id) DO UPDATE SET " \
-                           "athlete_test_id = EXCLUDED.athlete_test_id, " \
-                           "athlete_id = EXCLUDED.athlete_id, " \
-                           "athlete_hub_id = EXCLUDED.athlete_hub_id, " \
-                           "athlete_recording_id = EXCLUDED.athlete_recording_id, " \
-                           "athlete_recorded_utc = EXCLUDED.athlete_recorded_utc, " \
-                           "athlete_recorded_timezone = EXCLUDED.athlete_recorded_timezone, " \
-                           "trial_start_time = EXCLUDED.trial_start_time, " \
-                           "trial_end_time = EXCLUDED.trial_end_time, " \
-                           "athlete_trial_response_data = EXCLUDED.athlete_trial_response_data, " \
-                           "athlete_trial_limb = EXCLUDED.athlete_trial_limb, " \
-                           "athlete_trial_lastmodified_utc = EXCLUDED.athlete_trial_lastmodified_utc, " \
-                           "updated_at = EXCLUDED.updated_at, " \
-                           "modified_by_user = EXCLUDED.modified_by_user"
-                
+                );
+            """
+            if "trials" in update_tables:
                 logging.info(f"Number of trials total: {len(trial_rows)} ")
-                insert_rows(sql, trial_rows)
-            
-            # Insert/update results data
-            if "results" in update_tables and result_rows:
-                sql = f"""
-                    INSERT INTO {schema_name}.athlete_test_trial_results (
-                        athlete_trial_result_id,
-                        athlete_trial_id,
+                insert_rows(sql, trial_rows )
+            sql = f"""
+                INSERT INTO {schema_name}.athlete_test_trial_results (
+                    athlete_trial_result_id,
+                    athlete_trial_id,
+                    athlete_id,
+                    athlete_hub_id,
+                    athlete_test_id,
+                    result_value,
+                    result_time,
+                    result_limb,
+                    result_repeat,
+                    result_name,
+                    result_desc,
+                    result_unit,
+                    result_repeatable,
+                    result_assymetry,
+                    athlete_result_response_data,
+                    created_at,
+                    updated_at,
+                    created_by_user,
+                    modified_by_user
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                );
+            """
+            if "results" in update_tables:
+                logging.info(f"Number of results total: {len(result_rows)} ")
+                insert_rows(sql, result_rows)
+            if not "profiles" in update_tables:
+                continue
+
+
+            ###Athletes
+            athletes_url = f'{test_url}/v2019q3/teams/{team["id"]}/athletes'
+            athletes_data = fetch_api_data(token, 'GET', athletes_url, {'modifiedFrom': '2024-01-26T02:42:24.575Z'})
+            athlete_rows=[]
+            for athlete in athletes_data:
+                athlete_profile_url = f'{profile_url}/profiles/{athlete["id"]}'
+                athlete_profile = fetch_api_data(token, 'GET', athlete_profile_url, {'TenantId': team.get('id')}, accept = 'text/plain')
+                athlete_rows.extend(
+                    [(
+                        athlete.get('id'),
+                        athlete.get('teamId'),
+                        athlete.get('hubId'),
+                        athlete_profile.get('syncId'),
+                        athlete.get('id'),
+                        athlete.get('externalId'),
+                        athlete.get('name'),
+                        athlete.get('givenName'),
+                        athlete.get('familyName'),
+                        athlete_profile.get('dateOfBirth'),
+                        athlete_profile.get('sex'),
+                        athlete_profile.get('email'),
+                        athlete_profile.get('weightInKg'),
+                        athlete_profile.get('heightInCm'),
+                        json.dumps(athlete_profile),
+                        datetime.datetime.now(),
+                        datetime.datetime.now(),
+                        None,
+                        None
+                )]
+                )
+            sql = f"""
+                    INSERT INTO {schema_name}.athlete_profiles (
                         athlete_id,
+                        team_id,
                         athlete_hub_id,
-                        athlete_test_id,
-                        result_value,
-                        result_time,
-                        result_limb,
-                        result_repeat,
-                        result_name,
-                        result_desc,
-                        result_unit,
-                        result_repeatable,
-                        result_assymetry,
-                        athlete_result_response_data,
+                        athlete_sync_id,
+                        athlete_profile_id,
+                        athlete_external_id,
+                        athlete_name,
+                        athlete_given_name,
+                        athlete_family_name,
+                        athlete_dob,
+                        athlete_gender,
+                        athlete_email,
+                        athlete_weight_kgs,
+                        athlete_height_cms,
+                        athlete_profile_response_data,
                         created_at,
                         updated_at,
                         created_by_user,
                         modified_by_user
                     ) VALUES (
                         %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                    )"""
-                if force_update:
-                    sql += " ON CONFLICT (athlete_trial_result_id) DO UPDATE SET " \
-                           "athlete_trial_id = EXCLUDED.athlete_trial_id, " \
-                           "athlete_id = EXCLUDED.athlete_id, " \
-                           "athlete_hub_id = EXCLUDED.athlete_hub_id, " \
-                           "athlete_test_id = EXCLUDED.athlete_test_id, " \
-                           "result_value = EXCLUDED.result_value, " \
-                           "result_time = EXCLUDED.result_time, " \
-                           "result_limb = EXCLUDED.result_limb, " \
-                           "result_repeat = EXCLUDED.result_repeat, " \
-                           "result_name = EXCLUDED.result_name, " \
-                           "result_desc = EXCLUDED.result_desc, " \
-                           "result_unit = EXCLUDED.result_unit, " \
-                           "result_repeatable = EXCLUDED.result_repeatable, " \
-                           "result_assymetry = EXCLUDED.result_assymetry, " \
-                           "athlete_result_response_data = EXCLUDED.athlete_result_response_data, " \
-                           "updated_at = EXCLUDED.updated_at, " \
-                           "modified_by_user = EXCLUDED.modified_by_user"
-                
-                logging.info(f"Number of results total: {len(result_rows)} ")
-                insert_rows(sql, result_rows)
-            
-            # Athlete profiles handling
-            if "profiles" in update_tables:
-                athletes_url = f'{test_url}/v2019q3/teams/{team["id"]}/athletes'
-                athletes_data = fetch_api_data(token, 'GET', athletes_url, {'modifiedFrom': '2024-01-26T02:42:24.575Z'})
-                athlete_rows = []
-                
-                if athletes_data:
-                    if force_update:
-                        # Delete existing profiles for these athletes
-                        delete_sql = f"DELETE FROM {schema_name}.athlete_profiles WHERE athlete_id IN (%s)" % ','.join(['%s'] * len(athletes_data))
-                        delete_params = [athlete.get('id') for athlete in athletes_data]
-                        execute_delete(delete_sql, delete_params)
-                    
-                    for athlete in athletes_data:
-                        athlete_profile_url = f'{profile_url}/profiles/{athlete["id"]}'
-                        athlete_profile = fetch_api_data(token, 'GET', athlete_profile_url, {'TenantId': team.get('id')}, accept='text/plain')
-                        
-                        if athlete_profile:
-                            athlete_rows.append((
-                                athlete.get('id'),
-                                athlete.get('teamId'),
-                                athlete.get('hubId'),
-                                athlete_profile.get('syncId'),
-                                athlete.get('id'),
-                                athlete.get('externalId'),
-                                athlete.get('name'),
-                                athlete.get('givenName'),
-                                athlete.get('familyName'),
-                                athlete_profile.get('dateOfBirth'),
-                                athlete_profile.get('sex'),
-                                athlete_profile.get('email'),
-                                athlete_profile.get('weightInKg'),
-                                athlete_profile.get('heightInCm'),
-                                json.dumps(athlete_profile),
-                                datetime.datetime.now(),
-                                datetime.datetime.now(),
-                                None,
-                                None
-                            ))
-                    
-                    sql = f"""
-                        INSERT INTO {schema_name}.athlete_profiles (
-                            athlete_id,
-                            team_id,
-                            athlete_hub_id,
-                            athlete_sync_id,
-                            athlete_profile_id,
-                            athlete_external_id,
-                            athlete_name,
-                            athlete_given_name,
-                            athlete_family_name,
-                            athlete_dob,
-                            athlete_gender,
-                            athlete_email,
-                            athlete_weight_kgs,
-                            athlete_height_cms,
-                            athlete_profile_response_data,
-                            created_at,
-                            updated_at,
-                            created_by_user,
-                            modified_by_user
-                        ) VALUES (
-                            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                        )"""
-                    if force_update:
-                        sql += " ON CONFLICT (athlete_id) DO UPDATE SET " \
-                               "team_id = EXCLUDED.team_id, " \
-                               "athlete_hub_id = EXCLUDED.athlete_hub_id, " \
-                               "athlete_sync_id = EXCLUDED.athlete_sync_id, " \
-                               "athlete_profile_id = EXCLUDED.athlete_profile_id, " \
-                               "athlete_external_id = EXCLUDED.athlete_external_id, " \
-                               "athlete_name = EXCLUDED.athlete_name, " \
-                               "athlete_given_name = EXCLUDED.athlete_given_name, " \
-                               "athlete_family_name = EXCLUDED.athlete_family_name, " \
-                               "athlete_dob = EXCLUDED.athlete_dob, " \
-                               "athlete_gender = EXCLUDED.athlete_gender, " \
-                               "athlete_email = EXCLUDED.athlete_email, " \
-                               "athlete_weight_kgs = EXCLUDED.athlete_weight_kgs, " \
-                               "athlete_height_cms = EXCLUDED.athlete_height_cms, " \
-                               "athlete_profile_response_data = EXCLUDED.athlete_profile_response_data, " \
-                               "updated_at = EXCLUDED.updated_at, " \
-                               "modified_by_user = EXCLUDED.modified_by_user"
-                    
-                    logging.info(f"Number of athletes total: {len(athlete_rows)} ")
-                    insert_rows(sql, athlete_rows)
-    
+                    );
+                """
+
+            logging.info(f"Number of athletes total: {len(athlete_rows)} ")
+            insert_rows(sql, athlete_rows)
     except Exception as e:
         logging.error(f"Program ended unsuccessfully: {e}")
-        raise
 
 def create_profiles(import_url):
     profiles = call_sproc(postgres_conn_params, f"{schema_name}.get_athletes_to_create_vald_profiles")[0]
