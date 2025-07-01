@@ -18,5 +18,5 @@ ATHLETE_DATA = [
         "test_result": 85.5,
         "coach_comments": "Needs to work on stamina for longer events"
     },
-    # ... (other athlete records)
+   
 ]
