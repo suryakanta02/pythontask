@@ -28,6 +28,8 @@ def fetch_weather():
         return None
 
 def insert_weather_data(data):
+    print("This is what I received:")
+    print(json.dumps(data, indent=4))
     conn = get_db_connection()
     cursor = conn.cursor()
 

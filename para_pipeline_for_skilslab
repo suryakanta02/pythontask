@@ -37,8 +37,7 @@ def get_db_connection():
         print(f"Error connecting to database: {e}")
         raise
 
-def create_table():
-    conn=get_db_connection()
+def create_table(conn):
     """Create the athlete_tests table if it doesn't exist."""
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS athlete_tests (
@@ -76,9 +75,7 @@ def prepare_data():
         ))
     return prepared_data
 
-def insert_data():
-    conn=get_db_connection()
-    data=prepare_data()
+def insert_data(conn, data):
     """Insert data directly into the athlete_tests table."""
     insert_sql = """
     INSERT INTO athlete_tests (
@@ -98,15 +95,15 @@ def insert_data():
 
 def run_pipeline():
     """Run the complete data pipeline."""
-    conn = None
+    #abc = None
     try:
-        
-        create_table()
-        
-        insert_data()
+        abc = get_db_connection()
+        create_table(abc)
+        data = prepare_data()
+        insert_data(abc, data)
     finally:
-        if conn:
-            conn.close()
+        if abc:
+            abc.close()
 
 def main():
     print("Starting athlete data pipeline...")
