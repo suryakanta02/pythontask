@@ -75,7 +75,7 @@ def insert_rows(sql, rows):
     try:
         conn = psycopg2.connect(**pg_config)
         cur = conn.cursor()
-        extras.execute_batch(cur, sql, rows)  # Fast way to insert many rows
+        extras.execute_batch(cur, sql, rows)  
         conn.commit()
         logging.info(f"Inserted {len(rows)} rows.")
         cur.close()
@@ -114,7 +114,7 @@ def sync(date, update_tables=["tests", "trials", "results"]):
         result_rows = []
 
         for test in static_tests_data:
-            # First, delete if existing
+            
             delete_existing_test_data_if_present(test['id'], conn)
 
             # Add test row
