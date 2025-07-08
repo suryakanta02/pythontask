@@ -103,7 +103,17 @@
 #     logging.critical("Database connection failed: %s", conn_error)
 
 
-
+# CREATE TABLE weather_data (
+#     id SERIAL PRIMARY KEY,
+#     city VARCHAR(50),
+#     country VARCHAR(50),
+#     temperature_c FLOAT,
+#     condition TEXT,
+#     wind_kph FLOAT,
+#     humidity INT,
+#     air_quality JSONB,
+#     observation_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+# );
 
 import os, requests, logging, psycopg2, json, datetime, time, sys
 from psycopg2 import extras
